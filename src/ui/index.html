@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>dirviz</title>
+  <link rel="stylesheet" href="styles.css" />
+  <!-- window.__GRAPH_DATA__ is injected here by the server -->
+</head>
+<body>
+  <!-- Top bar -->
+  <header id="topbar">
+    <div id="topbar-left">
+      <span id="logo">dirviz</span>
+      <span id="meta-info"></span>
+    </div>
+    <div id="topbar-center">
+      <div id="filter-bar">
+        <input id="search-input" type="text" placeholder="Search files... ( / )" autocomplete="off" />
+        <div id="ext-filters"></div>
+        <select id="folder-filter"><option value="">All folders</option></select>
+      </div>
+    </div>
+    <div id="topbar-right">
+      <button id="tour-btn" class="btn-ghost" title="Codebase Tour (T)">Tour</button>
+      <button id="error-btn" class="btn-ghost" title="Error Tracer">Error Tracer</button>
+      <button id="feature-btn" class="btn-ghost" title="Feature Advisor">+ Feature</button>
+      <div id="mode-toggle">
+        <button id="mode-explorer" class="mode-btn active" title="Explorer mode — for everyone">Explorer</button>
+        <button id="mode-architect" class="mode-btn" title="Architect mode — technical deep dive">Architect</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main canvas -->
+  <main id="canvas-container">
+    <svg id="graph-svg"></svg>
+
+    <!-- Mini-map -->
+    <div id="minimap-container">
+      <canvas id="minimap"></canvas>
+    </div>
+
+    <!-- Zoom controls -->
+    <div id="zoom-controls">
+      <button id="zoom-in" title="Zoom in">+</button>
+      <button id="zoom-reset" title="Reset zoom (R)">⊙</button>
+      <button id="zoom-out" title="Zoom out">−</button>
+    </div>
+
+    <!-- Loading overlay -->
+    <div id="loading-overlay">
+      <div id="loading-content">
+        <div id="loading-spinner"></div>
+        <div id="loading-text">Analyzing codebase...</div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Slide-in detail panel -->
+  <aside id="detail-panel" class="panel hidden">
+    <button id="panel-close" title="Close (Esc)">✕</button>
+    <div id="panel-content"></div>
+  </aside>
+
+  <!-- Tour panel -->
+  <aside id="tour-panel" class="panel hidden">
+    <button id="tour-close" title="Close (Esc)">✕</button>
+    <h2>Codebase Tour</h2>
+    <div id="tour-content"></div>
+  </aside>
+
+  <!-- Error Tracer panel -->
+  <aside id="error-panel" class="panel hidden">
+    <button id="error-close" title="Close (Esc)">✕</button>
+    <h2>Error Tracer</h2>
+    <textarea id="error-input" placeholder="Paste your error or stack trace here..."></textarea>
+    <button id="error-trace-btn" class="btn-primary">Find files</button>
+    <div id="error-results"></div>
+  </aside>
+
+  <!-- Feature Advisor panel -->
+  <aside id="feature-panel" class="panel hidden">
+    <button id="feature-close" title="Close (Esc)">✕</button>
+    <h2>Feature Advisor</h2>
+    <p class="panel-hint">Describe what you want to add or change.</p>
+    <textarea id="feature-input" placeholder="e.g. Add a dark mode toggle, Add user authentication, Show a dashboard..."></textarea>
+    <button id="feature-submit-btn" class="btn-primary">Find relevant files</button>
+    <div id="feature-results"></div>
+  </aside>
+
+  <!-- Tooltip -->
+  <div id="tooltip" class="hidden"></div>
+
+  <script src="graph.bundle.js" onerror="window.__BUNDLE_FAILED__=true"></script>
+  <script src="blastRadius.js"></script>
+  <script src="filters.js"></script>
+  <script src="panel.js"></script>
+  <script src="explorer.js"></script>
+  <script src="architect.js"></script>
+  <script src="tour.js"></script>
+  <script src="errorTrace.js"></script>
+  <script src="featureAdvisor.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

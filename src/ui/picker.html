@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>dirviz</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0d1117;
+      color: #c9d1d9;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      padding: 40px 48px;
+      width: 100%;
+      max-width: 520px;
+    }
+
+    .logo { font-size: 28px; font-weight: 700; color: #58a6ff; letter-spacing: -0.5px; margin-bottom: 6px; }
+    .tagline { font-size: 13px; color: #8b949e; margin-bottom: 32px; }
+
+    label {
+      display: block; font-size: 13px; font-weight: 600; color: #8b949e;
+      text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;
+    }
+
+    input[type="text"], input[type="password"], select {
+      width: 100%; background: #0d1117; border: 1px solid #30363d;
+      border-radius: 6px; color: #c9d1d9; font-size: 15px; padding: 10px 14px;
+      outline: none; transition: border-color 0.15s;
+    }
+    input[type="text"]:focus, input[type="password"]:focus, select:focus { border-color: #58a6ff; }
+    input[type="text"].error { border-color: #f85149; }
+    select { font-family: inherit; cursor: pointer; }
+    select option { background: #161b22; }
+
+    .hint { font-size: 12px; color: #6e7681; margin-top: 6px; margin-bottom: 20px; }
+
+    /* AI toggle row */
+    .ai-toggle-row {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 0; padding: 12px 14px;
+      background: #0d1117; border: 1px solid #30363d; border-radius: 8px;
+      cursor: pointer; transition: border-color 0.15s;
+    }
+    .ai-toggle-row:hover { border-color: #58a6ff; }
+    .ai-toggle-row input[type="checkbox"] { accent-color: #238636; cursor: pointer; width: 16px; height: 16px; flex-shrink: 0; }
+    .ai-toggle-label { font-size: 14px; color: #c9d1d9; font-weight: 500; user-select: none; }
+    .ai-toggle-sub { font-size: 12px; color: #6e7681; margin-left: auto; }
+
+    /* AI config section */
+    #ai-section {
+      overflow: hidden;
+      max-height: 0;
+      transition: max-height 0.3s ease, opacity 0.3s ease, margin-top 0.3s ease;
+      opacity: 0;
+      margin-top: 0;
+    }
+    #ai-section.open {
+      max-height: 300px;
+      opacity: 1;
+      margin-top: 12px;
+    }
+    .ai-section-inner {
+      background: #0d1117; border: 1px solid #30363d; border-top: none;
+      border-radius: 0 0 8px 8px; padding: 16px;
+    }
+    /* When ai-section is open, attach to the toggle visually */
+    .ai-toggle-row.open { border-bottom-left-radius: 0; border-bottom-right-radius: 0; border-color: #30363d; }
+
+    .field-row { margin-bottom: 14px; }
+    .field-row label { font-size: 12px; margin-bottom: 6px; }
+    .field-row:last-child { margin-bottom: 0; }
+
+    .saved-key-row {
+      display: flex; align-items: center; gap: 10px;
+      background: #0f2d0f; border: 1px solid #2ea04340; border-radius: 6px;
+      padding: 8px 12px; font-size: 13px; color: #56d364;
+    }
+    .saved-key-row svg { flex-shrink: 0; }
+    .saved-key-row .change-link {
+      margin-left: auto; color: #8b949e; font-size: 12px; cursor: pointer;
+      text-decoration: underline; text-underline-offset: 2px;
+    }
+    .saved-key-row .change-link:hover { color: #c9d1d9; }
+
+    .margin-bottom { margin-bottom: 20px; }
+
+    .btn-primary {
+      width: 100%; background: #238636; border: 1px solid #2ea043;
+      border-radius: 6px; color: #fff; font-size: 15px; font-weight: 600;
+      padding: 11px 20px; cursor: pointer; transition: background 0.15s;
+      margin-top: 20px;
+    }
+    .btn-primary:hover:not(:disabled) { background: #2ea043; }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Progress */
+    #progress-section { display: none; margin-top: 24px; }
+    .progress-bar-track { background: #21262d; border-radius: 4px; height: 6px; overflow: hidden; margin-bottom: 12px; }
+    .progress-bar-fill { height: 100%; background: #238636; border-radius: 4px; width: 0%; transition: width 0.3s ease; }
+    #progress-log { font-size: 12px; font-family: 'SFMono-Regular', Consolas, monospace; color: #8b949e; line-height: 1.7; max-height: 120px; overflow-y: auto; }
+
+    #error-msg {
+      display: none; margin-top: 16px; background: #1a0d0d;
+      border: 1px solid #f8514940; border-radius: 6px; padding: 12px 14px;
+      font-size: 13px; color: #f85149;
+    }
+
+    /* Preflight install prompt */
+    #preflight-prompt {
+      display: none; margin-top: 16px;
+      background: #1a1200; border: 1px solid #d2960040;
+      border-radius: 8px; padding: 16px;
+    }
+    #preflight-prompt .preflight-title {
+      font-size: 13px; font-weight: 600; color: #e3b341; margin-bottom: 8px;
+    }
+    #preflight-prompt .preflight-body {
+      font-size: 13px; color: #8b949e; margin-bottom: 14px; line-height: 1.6;
+    }
+    .preflight-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .btn-install {
+      background: #238636; border: 1px solid #2ea043;
+      border-radius: 6px; color: #fff; font-size: 13px; font-weight: 600;
+      padding: 8px 16px; cursor: pointer; transition: background 0.15s;
+    }
+    .btn-install:hover:not(:disabled) { background: #2ea043; }
+    .btn-install:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-no-ai {
+      background: transparent; border: 1px solid #30363d;
+      border-radius: 6px; color: #8b949e; font-size: 13px; font-weight: 500;
+      padding: 8px 16px; cursor: pointer; transition: border-color 0.15s, color 0.15s;
+    }
+    .btn-no-ai:hover { border-color: #8b949e; color: #c9d1d9; }
+    #preflight-log {
+      margin-top: 12px; font-size: 12px;
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      color: #8b949e; line-height: 1.7;
+      max-height: 100px; overflow-y: auto; display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">dirviz</div>
+    <div class="tagline">Interactive dependency graph for any codebase</div>
+
+    <label for="dir-input">Directory path</label>
+    <input type="text" id="dir-input" placeholder="C:\Users\you\projects\myapp" autocomplete="off" spellcheck="false" />
+    <div class="hint margin-bottom">Enter the full path to the project you want to visualize.</div>
+
+    <!-- AI toggle -->
+    <div class="ai-toggle-row open" id="ai-toggle-row">
+      <input type="checkbox" id="use-ai-check" checked />
+      <span class="ai-toggle-label">Enable AI summaries</span>
+      <span class="ai-toggle-sub" id="ai-toggle-sub">saved gemini key detected</span>
+    </div>
+
+    <!-- AI config section (slides open) -->
+    <div id="ai-section" class="open">
+      <div class="ai-section-inner">
+        <div class="field-row">
+          <label for="ai-provider-select">AI Provider</label>
+          <select id="ai-provider-select">
+            <option value="openai">OpenAI (gpt-4o-mini)</option>
+            <option value="anthropic">Anthropic (claude-3-5-haiku)</option>
+            <option value="gemini" selected>Google Gemini — included &#10003;</option>
+            <option value="ollama">Ollama (local, no key needed)</option>
+          </select>
+        </div>
+
+        <!-- Saved key indicator (shown when a key exists) -->
+        <div class="field-row" id="saved-key-row" style="display:none">
+          <div class="saved-key-row">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="#56d364"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 0 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0z"/></svg>
+            <span id="saved-key-text">Using saved key</span>
+            <span class="change-link" id="change-key-link">use a different key</span>
+          </div>
+        </div>
+
+        <!-- Key input (shown when no saved key or user clicks "change") -->
+        <div class="field-row" id="key-input-row" style="display:none">
+          <label for="ai-key-input">API Key</label>
+          <input type="password" id="ai-key-input" placeholder="sk-..." autocomplete="off" />
+          <div class="hint" style="margin-bottom:0">Saved to ~/.dirviz/config.json on your machine.</div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-primary" id="analyze-btn">Analyze</button>
+
+    <div id="progress-section">
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" id="progress-bar"></div>
+      </div>
+      <div id="progress-log"></div>
+    </div>
+
+    <div id="error-msg"></div>
+
+    <!-- Preflight: shown when Gemini unavailable and Ollama not running -->
+    <div id="preflight-prompt">
+      <div class="preflight-title">&#9888; AI provider unavailable</div>
+      <div class="preflight-body">
+        Gemini is unavailable and Ollama is not running.<br>
+        Ollama is a free local AI that works fully offline.
+      </div>
+      <div class="preflight-actions">
+        <button class="btn-install" id="install-ollama-btn">Install Ollama &amp; continue</button>
+        <button class="btn-no-ai" id="continue-no-ai-btn">Continue without AI</button>
+      </div>
+      <div id="preflight-log"></div>
+    </div>
+  </div>
+
+  <script>
+    const dirInput         = document.getElementById('dir-input');
+    const analyzeBtn       = document.getElementById('analyze-btn');
+    const useAiCheck       = document.getElementById('use-ai-check');
+    const aiToggleRow      = document.getElementById('ai-toggle-row');
+    const aiToggleSub      = document.getElementById('ai-toggle-sub');
+    const aiSection        = document.getElementById('ai-section');
+    const providerSelect   = document.getElementById('ai-provider-select');
+    const savedKeyRow      = document.getElementById('saved-key-row');
+    const savedKeyText     = document.getElementById('saved-key-text');
+    const changeKeyLink    = document.getElementById('change-key-link');
+    const keyInputRow      = document.getElementById('key-input-row');
+    const aiKeyInput       = document.getElementById('ai-key-input');
+    const progressSection  = document.getElementById('progress-section');
+    const progressBar      = document.getElementById('progress-bar');
+    const progressLog      = document.getElementById('progress-log');
+    const errorMsg         = document.getElementById('error-msg');
+    const preflightPrompt  = document.getElementById('preflight-prompt');
+    const installOllamaBtn = document.getElementById('install-ollama-btn');
+    const continueNoAiBtn  = document.getElementById('continue-no-ai-btn');
+    const preflightLog     = document.getElementById('preflight-log');
+
+    // Saved key state from /api/config
+    let savedKeys = { openai: false, anthropic: false, gemini: true, ollama: true };
+    let overridingKey = false;
+
+    // Load saved key state from server and update UI accordingly
+    fetch('/api/config').then(r => r.json()).then(data => {
+      savedKeys = data.savedKeys;
+      // Pre-select the provider they used last
+      if (data.provider) providerSelect.value = data.provider;
+      updateKeyUI();
+    }).catch(() => {});
+
+    function updateKeyUI() {
+      const p = providerSelect.value;
+      overridingKey = false;
+      aiKeyInput.value = '';
+
+      if (p === 'ollama') {
+        savedKeyRow.style.display = 'none';
+        keyInputRow.style.display = 'none';
+        aiToggleSub.textContent = 'local model — no key needed';
+      } else if (p === 'gemini' && savedKeys.gemini) {
+        // Gemini always has a key (bundled fallback)
+        savedKeyRow.style.display = 'block';
+        keyInputRow.style.display = 'none';
+        savedKeyText.textContent = 'Using Gemini — included \u2713';
+        aiToggleSub.textContent = 'saved gemini key detected';
+      } else if (savedKeys[p]) {
+        savedKeyRow.style.display = 'block';
+        keyInputRow.style.display = 'none';
+        savedKeyText.textContent = `Using saved ${p} key`;
+        aiToggleSub.textContent = `saved ${p} key detected`;
+      } else {
+        savedKeyRow.style.display = 'none';
+        keyInputRow.style.display = 'block';
+        aiToggleSub.textContent = 'enter API key below';
+      }
+    }
+
+    providerSelect.addEventListener('change', updateKeyUI);
+
+    changeKeyLink.addEventListener('click', () => {
+      overridingKey = true;
+      savedKeyRow.style.display = 'none';
+      keyInputRow.style.display = 'block';
+      aiKeyInput.focus();
+    });
+
+    // Toggle AI section
+    useAiCheck.addEventListener('change', () => {
+      if (useAiCheck.checked) {
+        aiSection.classList.add('open');
+        aiToggleRow.classList.add('open');
+        updateKeyUI();
+      } else {
+        aiSection.classList.remove('open');
+        aiToggleRow.classList.remove('open');
+        aiToggleSub.textContent = 'faster without AI';
+      }
+    });
+
+    // Clicking the row toggles the checkbox
+    aiToggleRow.addEventListener('click', (e) => {
+      if (e.target === useAiCheck) return;
+      useAiCheck.checked = !useAiCheck.checked;
+      useAiCheck.dispatchEvent(new Event('change'));
+    });
+
+    function log(msg, pct) {
+      const line = document.createElement('div');
+      line.textContent = msg;
+      progressLog.appendChild(line);
+      progressLog.scrollTop = progressLog.scrollHeight;
+      if (pct !== undefined) progressBar.style.width = pct + '%';
+    }
+
+    function showError(msg) {
+      errorMsg.textContent = msg;
+      errorMsg.style.display = 'block';
+      analyzeBtn.disabled = false;
+      analyzeBtn.textContent = 'Analyze';
+    }
+
+    function startAnalysis(payload, preflightMsg) {
+      progressLog.innerHTML = '';
+      progressBar.style.width = '0%';
+      progressSection.style.display = 'block';
+      preflightPrompt.style.display = 'none';
+      errorMsg.style.display = 'none';
+      analyzeBtn.disabled = true;
+      analyzeBtn.textContent = 'Analyzing...';
+
+      // Show an optional preflight message before the stream starts
+      if (preflightMsg) log(preflightMsg, 2);
+
+      fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }).then(res => {
+        if (!res.ok) {
+          return res.json().catch(() => ({ error: 'Unknown error' })).then(data => {
+            showError(data.error || `Server error ${res.status}`);
+          });
+        }
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        function pump() {
+          return reader.read().then(({ done, value }) => {
+            if (done) return;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop();
+            for (const line of lines) {
+              if (!line.trim()) continue;
+              try {
+                const msg = JSON.parse(line);
+                if (msg.type === 'progress') {
+                  log(msg.text, msg.pct);
+                } else if (msg.type === 'done') {
+                  log('Done! Opening graph...', 100);
+                  setTimeout(() => { window.location.href = '/graph'; }, 400);
+                  return;
+                } else if (msg.type === 'error') {
+                  showError(msg.error);
+                  return;
+                }
+              } catch {}
+            }
+            return pump();
+          });
+        }
+        return pump();
+      }).catch(e => {
+        showError('Could not connect to server: ' + e.message);
+      });
+    }
+
+    analyzeBtn.addEventListener('click', async () => {
+      const dir = dirInput.value.trim();
+      if (!dir) { dirInput.classList.add('error'); dirInput.focus(); return; }
+      dirInput.classList.remove('error');
+      errorMsg.style.display = 'none';
+      preflightPrompt.style.display = 'none';
+
+      const useAi = useAiCheck.checked;
+      const provider = providerSelect.value;
+      const keyValue = aiKeyInput.value.trim();
+
+      const payload = {
+        directory: dir,
+        noAi: !useAi,
+        aiProvider: useAi ? provider : undefined,
+        aiKey: (useAi && keyValue) ? keyValue : undefined,
+      };
+
+      // If AI is disabled or provider is not Gemini, skip preflight and analyze directly
+      if (!useAi || provider !== 'gemini') {
+        startAnalysis(payload);
+        return;
+      }
+
+      // Preflight check — validate Gemini + check Ollama before committing to analysis
+      analyzeBtn.disabled = true;
+      analyzeBtn.textContent = 'Checking...';
+
+      try {
+        const pf = await fetch('/api/preflight').then(r => r.json());
+
+        if (pf.geminiOk) {
+          // Gemini is working — proceed normally
+          startAnalysis(payload);
+        } else if (pf.ollamaRunning) {
+          // Gemini down, but Ollama server is already running — switch silently
+          startAnalysis({ ...payload, aiProvider: 'ollama' },
+            `Gemini unavailable (${pf.geminiReason || 'unknown'}) — using Ollama`);
+        } else if (pf.ollamaInstalled) {
+          // Ollama is installed but server not yet running — proceed with ollama;
+          // cli.ts will start it or handle the connection error gracefully
+          startAnalysis({ ...payload, aiProvider: 'ollama' },
+            `Gemini unavailable — starting Ollama...`);
+        } else {
+          // Nothing available — show install prompt
+          analyzeBtn.disabled = false;
+          analyzeBtn.textContent = 'Analyze';
+          preflightPrompt.style.display = 'block';
+        }
+      } catch {
+        // Preflight itself failed — just try anyway
+        startAnalysis(payload);
+      }
+    });
+
+    // "Install Ollama & continue"
+    installOllamaBtn.addEventListener('click', () => {
+      installOllamaBtn.disabled = true;
+      continueNoAiBtn.disabled = true;
+      preflightLog.style.display = 'block';
+      preflightLog.innerHTML = '';
+
+      const dir = dirInput.value.trim();
+
+      fetch('/api/install-ollama', { method: 'POST' }).then(res => {
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        function pump() {
+          return reader.read().then(({ done, value }) => {
+            if (done) return;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop();
+            for (const line of lines) {
+              if (!line.trim()) continue;
+              try {
+                const msg = JSON.parse(line);
+                if (msg.type === 'progress' || msg.type === 'done') {
+                  const el = document.createElement('div');
+                  el.textContent = msg.text || msg.type;
+                  preflightLog.appendChild(el);
+                  preflightLog.scrollTop = preflightLog.scrollHeight;
+                  if (msg.type === 'done') {
+                    // Ollama is ready — start analysis with ollama provider
+                    preflightPrompt.style.display = 'none';
+                    startAnalysis({ directory: dir, noAi: false, aiProvider: 'ollama' });
+                    return;
+                  }
+                } else if (msg.type === 'error') {
+                  const el = document.createElement('div');
+                  el.textContent = 'Error: ' + msg.error;
+                  el.style.color = '#f85149';
+                  preflightLog.appendChild(el);
+                  installOllamaBtn.disabled = false;
+                  continueNoAiBtn.disabled = false;
+                  return;
+                }
+              } catch {}
+            }
+            return pump();
+          });
+        }
+        return pump();
+      }).catch(e => {
+        const el = document.createElement('div');
+        el.textContent = 'Install failed: ' + e.message;
+        el.style.color = '#f85149';
+        preflightLog.appendChild(el);
+        installOllamaBtn.disabled = false;
+        continueNoAiBtn.disabled = false;
+      });
+    });
+
+    // "Continue without AI"
+    continueNoAiBtn.addEventListener('click', () => {
+      const dir = dirInput.value.trim();
+      preflightPrompt.style.display = 'none';
+      startAnalysis({ directory: dir, noAi: true });
+    });
+
+    dirInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') analyzeBtn.click(); });
+
+    // Initialize: open AI section since checkbox is pre-ticked
+    updateKeyUI();
+  </script>
+</body>
+</html>
